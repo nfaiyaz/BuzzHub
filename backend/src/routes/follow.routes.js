@@ -102,7 +102,7 @@ router.get('/:username/followers', requireAuth, async (req, res) => {
       followingId: target.id,
     },
     include: {
-      follower: {
+      followerUser: {
         select: {
           id: true,
           name: true,
@@ -113,7 +113,7 @@ router.get('/:username/followers', requireAuth, async (req, res) => {
     },
   });
 
-  res.json(rows.map((row) => row.follower));
+  res.json(rows.map((row) => row.followerUser));
 });
 
 router.get('/:username/following', requireAuth, async (req, res) => {
@@ -134,7 +134,7 @@ router.get('/:username/following', requireAuth, async (req, res) => {
       followerId: target.id,
     },
     include: {
-      following: {
+      followingUser: {
         select: {
           id: true,
           name: true,
@@ -145,7 +145,7 @@ router.get('/:username/following', requireAuth, async (req, res) => {
     },
   });
 
-  res.json(rows.map((row) => row.following));
+  res.json(rows.map((row) => row.followingUser));
 });
 
 module.exports = router;
