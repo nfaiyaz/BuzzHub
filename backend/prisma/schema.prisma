@@ -21,6 +21,7 @@ model User {
   posts     Post[]
   comments  Comment[]
   likes     Like[]
+  reactions Reaction[]
 
   following Follow[] @relation("Following")
   followers Follow[] @relation("Followers")
@@ -37,6 +38,7 @@ model Post {
 
   comments Comment[]
   likes    Like[]
+  reactions Reaction[]
 
   @@index([authorId])
   @@index([createdAt])
@@ -70,6 +72,21 @@ model Like {
   @@index([postId])
 }
 
+model Reaction {
+  id        String       @id @default(uuid())
+  type      ReactionType
+  createdAt DateTime     @default(now())
+
+  userId String
+  postId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
 model Follow {
   followerId  String
   followingId String
@@ -80,4 +97,13 @@ model Follow {
 
   @@id([followerId, followingId])
   @@index([followingId])
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  HAHA
+  WOW
+  SAD
+  ANGRY
 }

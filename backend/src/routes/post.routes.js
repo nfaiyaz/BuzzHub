@@ -6,6 +6,15 @@ const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
+const allowedReactionTypes = [
+  'LIKE',
+  'LOVE',
+  'HAHA',
+  'WOW',
+  'SAD',
+  'ANGRY',
+];
+
 router.get('/', requireAuth, async (req, res) => {
   try {
     const posts = await prisma.post.findMany({
@@ -19,12 +28,14 @@ router.get('/', requireAuth, async (req, res) => {
             avatarUrl: true,
           },
         },
+
         _count: {
           select: {
             likes: true,
             comments: true,
           },
         },
+
         likes: {
           where: {
             userId: req.userId,
@@ -33,23 +44,53 @@ router.get('/', requireAuth, async (req, res) => {
             userId: true,
           },
         },
+
+        reactions: {
+          select: {
+            userId: true,
+            type: true,
+          },
+        },
       },
     });
 
     res.json(
-      posts.map((post) => ({
-        id: post.id,
-        content: post.content,
-        createdAt: post.createdAt,
-        updatedAt: post.updatedAt,
-        author: post.author,
-        likeCount: post._count.likes,
-        commentCount: post._count.comments,
-        isLiked: post.likes.length > 0,
-      }))
+      posts.map((post) => {
+        const reactionCounts = {
+          LIKE: 0,
+          LOVE: 0,
+          HAHA: 0,
+          WOW: 0,
+          SAD: 0,
+          ANGRY: 0,
+        };
+
+        post.reactions.forEach((reaction) => {
+          reactionCounts[reaction.type] += 1;
+        });
+
+        const myReaction =
+          post.reactions.find(
+            (reaction) => reaction.userId === req.userId
+          )?.type || null;
+
+        return {
+          id: post.id,
+          content: post.content,
+          createdAt: post.createdAt,
+          updatedAt: post.updatedAt,
+          author: post.author,
+          likeCount: post._count.likes,
+          commentCount: post._count.comments,
+          isLiked: post.likes.length > 0,
+          reactionCounts,
+          myReaction,
+        };
+      })
     );
   } catch (error) {
     console.error(error);
+
     res.status(500).json({
       message: 'Could not load posts.',
     });
@@ -94,9 +135,19 @@ router.post('/', requireAuth, async (req, res) => {
       likeCount: 0,
       commentCount: 0,
       isLiked: false,
+      reactionCounts: {
+        LIKE: 0,
+        LOVE: 0,
+        HAHA: 0,
+        WOW: 0,
+        SAD: 0,
+        ANGRY: 0,
+      },
+      myReaction: null,
     });
   } catch (error) {
     console.error(error);
+
     res.status(500).json({
       message: 'Could not create post.',
     });
@@ -134,6 +185,7 @@ router.delete('/:id', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+
     res.status(500).json({
       message: 'Could not delete post.',
     });
@@ -199,8 +251,128 @@ router.post('/:id/like', requireAuth, async (req, res) => {
     });
   } catch (error) {
     console.error(error);
+
     res.status(500).json({
       message: 'Could not update like.',
+    });
+  }
+});
+
+router.post('/:id/reaction', requireAuth, async (req, res) => {
+  try {
+    const post = await prisma.post.findUnique({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!post) {
+      return res.status(404).json({
+        message: 'Post not found.',
+      });
+    }
+
+    const type = String(req.body.type || '').toUpperCase();
+
+    if (!allowedReactionTypes.includes(type)) {
+      return res.status(400).json({
+        message: 'Invalid reaction type.',
+      });
+    }
+
+    const existing = await prisma.reaction.findUnique({
+      where: {
+        userId_postId: {
+          userId: req.userId,
+          postId: post.id,
+        },
+      },
+    });
+
+    let myReaction = null;
+
+    if (existing && existing.type === type) {
+      await prisma.reaction.delete({
+        where: {
+          userId_postId: {
+            userId: req.userId,
+            postId: post.id,
+          },
+        },
+      });
+    } else if (existing) {
+      const updated = await prisma.reaction.update({
+        where: {
+          userId_postId: {
+            userId: req.userId,
+            postId: post.id,
+          },
+        },
+        data: {
+          type,
+        },
+      });
+
+      myReaction = updated.type;
+    } else {
+      const created = await prisma.reaction.create({
+        data: {
+          type,
+          userId: req.userId,
+          postId: post.id,
+        },
+      });
+
+      myReaction = created.type;
+    }
+
+    const reactionRows = await prisma.reaction.findMany({
+      where: {
+        postId: post.id,
+      },
+      select: {
+        type: true,
+      },
+    });
+
+    const reactionCounts = {
+      LIKE: 0,
+      LOVE: 0,
+      HAHA: 0,
+      WOW: 0,
+      SAD: 0,
+      ANGRY: 0,
+    };
+
+    reactionRows.forEach((reaction) => {
+      reactionCounts[reaction.type] += 1;
+    });
+
+    if (!myReaction) {
+      const current = await prisma.reaction.findUnique({
+        where: {
+          userId_postId: {
+            userId: req.userId,
+            postId: post.id,
+          },
+        },
+        select: {
+          type: true,
+        },
+      });
+
+      myReaction = current?.type || null;
+    }
+
+    res.json({
+      reactionCounts,
+      myReaction,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: 'Could not update reaction.',
     });
   }
 });
