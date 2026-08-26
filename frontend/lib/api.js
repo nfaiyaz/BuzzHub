@@ -18,11 +18,15 @@ export function getCurrentUser() {
 export function saveAuth({ token, user }) {
   localStorage.setItem('token', token);
   localStorage.setItem('user', JSON.stringify(user));
+
+  window.dispatchEvent(new Event('auth-change'));
 }
 
 export function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+
+  window.dispatchEvent(new Event('auth-change'));
 }
 
 export async function apiFetch(path, options = {}) {

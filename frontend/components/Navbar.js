@@ -1,24 +1,40 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSyncExternalStore } from 'react';
 import { getCurrentUser, logout } from '../lib/api';
 
-function subscribe(callback) {
-  window.addEventListener('storage', callback);
-
-  return () => {
-    window.removeEventListener('storage', callback);
-  };
-}
+let cachedUser = null;
+let initialized = false;
 
 function getUserSnapshot() {
-  return getCurrentUser();
+  if (!initialized && typeof window !== 'undefined') {
+    cachedUser = getCurrentUser();
+    initialized = true;
+  }
+
+  return cachedUser;
 }
 
 function getServerSnapshot() {
   return null;
+}
+
+function subscribe(callback) {
+  function handleAuthChange() {
+    cachedUser = getCurrentUser();
+    initialized = true;
+    callback();
+  }
+
+  window.addEventListener('storage', handleAuthChange);
+  window.addEventListener('auth-change', handleAuthChange);
+
+  return () => {
+    window.removeEventListener('storage', handleAuthChange);
+    window.removeEventListener('auth-change', handleAuthChange);
+  };
 }
 
 export default function Navbar() {
@@ -32,6 +48,12 @@ export default function Navbar() {
 
   function handleLogout() {
     logout();
+
+    cachedUser = null;
+    initialized = true;
+
+    window.dispatchEvent(new Event('auth-change'));
+
     router.push('/login');
   }
 
