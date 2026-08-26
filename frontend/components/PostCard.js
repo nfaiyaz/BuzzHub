@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { apiFetch, getCurrentUser } from '../lib/api';
 import CommentList from './CommentList';
+import ReactionPicker from './ReactionPicker';
 
 export default function PostCard({ post, onUpdated, onDeleted }) {
   const [busy, setBusy] = useState(false);
@@ -95,6 +96,11 @@ export default function PostCard({ post, onUpdated, onDeleted }) {
           Comments: {post.commentCount}
         </span>
       </div>
+
+      <ReactionPicker
+        post={post}
+        onUpdated={onUpdated}
+      />
 
       <CommentList postId={post.id} />
     </article>

@@ -93,3 +93,25 @@ background:#dbeafe; color:#17365d; font-size:30px; font-weight:800;
 .card { padding: 15px; }
 .comment-form { flex-direction: column; }
 }
+.reaction-picker {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.reaction-button {
+  border: 1px solid #d1d9e6;
+  background: white;
+  border-radius: 999px;
+  padding: 5px 9px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reaction-button.active {
+  background: #eaf0f7;
+  border-color: #24527a;
+}
