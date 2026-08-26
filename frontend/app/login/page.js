@@ -1,12 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, saveAuth } from '../../lib/api';
+import { useSyncExternalStore } from 'react';
+
+import {
+  apiFetch,
+  saveAuth,
+  subscribeAuth,
+  getAuthSnapshot,
+  getAuthServerSnapshot,
+} from '../../lib/api';
 
 export default function LoginPage() {
   const router = useRouter();
+
+  const user = useSyncExternalStore(
+    subscribeAuth,
+    getAuthSnapshot,
+    getAuthServerSnapshot
+  );
 
   const [form, setForm] = useState({
     email: '',
@@ -15,6 +29,12 @@ export default function LoginPage() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      router.replace('/');
+    }
+  }, [user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -30,8 +50,7 @@ export default function LoginPage() {
 
       saveAuth(data);
 
-      router.push('/');
-      router.refresh();
+      router.replace('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -39,20 +58,40 @@ export default function LoginPage() {
     }
   }
 
+  if (user) {
+    return (
+      <div className="container">
+        <div className="card">
+          Redirecting...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container narrow-page">
       <div className="card auth-card">
         <h1>Login</h1>
 
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <p className="error">
+            {error}
+          </p>
+        )}
 
-        <form onSubmit={handleSubmit} className="form-stack">
+        <form
+          onSubmit={handleSubmit}
+          className="form-stack"
+        >
           <input
             type="email"
             placeholder="Email"
             value={form.email}
             onChange={e =>
-              setForm({ ...form, email: e.target.value })
+              setForm({
+                ...form,
+                email: e.target.value,
+              })
             }
             required
           />
@@ -62,7 +101,10 @@ export default function LoginPage() {
             placeholder="Password"
             value={form.password}
             onChange={e =>
-              setForm({ ...form, password: e.target.value })
+              setForm({
+                ...form,
+                password: e.target.value,
+              })
             }
             required
           />
@@ -71,12 +113,17 @@ export default function LoginPage() {
             className="primary-button"
             disabled={loading}
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading
+              ? 'Logging in...'
+              : 'Login'}
           </button>
         </form>
 
         <p className="muted">
-          No account? <Link href="/register">Create one</Link>
+          No account?{' '}
+          <Link href="/register">
+            Create one
+          </Link>
         </p>
       </div>
     </div>

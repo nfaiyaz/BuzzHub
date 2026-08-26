@@ -1,12 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { apiFetch, saveAuth } from '../../lib/api';
+import { useSyncExternalStore } from 'react';
+
+import {
+  apiFetch,
+  saveAuth,
+  subscribeAuth,
+  getAuthSnapshot,
+  getAuthServerSnapshot,
+} from '../../lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  const user = useSyncExternalStore(
+    subscribeAuth,
+    getAuthSnapshot,
+    getAuthServerSnapshot
+  );
 
   const [form, setForm] = useState({
     name: '',
@@ -17,6 +31,12 @@ export default function RegisterPage() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      router.replace('/');
+    }
+  }, [user, router]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -31,7 +51,8 @@ export default function RegisterPage() {
       });
 
       saveAuth(data);
-      router.push('/');
+
+      router.replace('/');
     } catch (err) {
       setError(err.message);
     } finally {
@@ -39,14 +60,31 @@ export default function RegisterPage() {
     }
   }
 
+  if (user) {
+    return (
+      <div className="container">
+        <div className="card">
+          Redirecting...
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container narrow-page">
       <div className="card auth-card">
         <h1>Create account</h1>
 
-        {error && <p className="error">{error}</p>}
+        {error && (
+          <p className="error">
+            {error}
+          </p>
+        )}
 
-        <form onSubmit={handleSubmit} className="form-stack">
+        <form
+          onSubmit={handleSubmit}
+          className="form-stack"
+        >
           <input
             placeholder="Full name"
             value={form.name}
@@ -102,12 +140,17 @@ export default function RegisterPage() {
             className="primary-button"
             disabled={loading}
           >
-            {loading ? 'Creating...' : 'Register'}
+            {loading
+              ? 'Creating...'
+              : 'Register'}
           </button>
         </form>
 
         <p className="muted">
-          Already registered? <Link href="/login">Login</Link>
+          Already registered?{' '}
+          <Link href="/login">
+            Login
+          </Link>
         </p>
       </div>
     </div>
