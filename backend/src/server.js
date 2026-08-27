@@ -1,7 +1,10 @@
 require('dotenv').config();
 const app = require('./app');
 const prisma = require('./prisma');
+const requestRoutes = require('./routes/request.routes');
 const PORT = Number(process.env.PORT || 5000);
+
+app.use('/api/users', requestRoutes);
 
 async function start() {
 try {

@@ -150,4 +150,75 @@ router.get('/:username/posts', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/suggestions', requireAuth, async (req, res) => {
+  try {
+    const following = await prisma.follow.findMany({
+      where: {
+        followerId: req.userId,
+      },
+      select: {
+        followingId: true,
+      },
+    });
+
+    const followingIds = following.map(
+      (follow) => follow.followingId
+    );
+
+    const users = await prisma.user.findMany({
+      where: {
+        id: {
+          not: req.userId,
+          notIn: followingIds,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        username: true,
+        bio: true,
+        avatarUrl: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+    });
+
+    const suggestions = await Promise.all(
+      users.map(async (user) => {
+        const request = await prisma.friendRequest.findFirst({
+          where: {
+            OR: [
+              {
+                senderId: req.userId,
+                receiverId: user.id,
+              },
+              {
+                senderId: user.id,
+                receiverId: req.userId,
+              },
+            ],
+            status: 'PENDING',
+          },
+        });
+
+        return {
+          ...user,
+          requestStatus: request ? 'PENDING' : null,
+          requestId: request?.id || null,
+        };
+      })
+    );
+
+    res.json(suggestions);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: 'Could not load user suggestions.',
+    });
+  }
+});
+
 module.exports = router;
