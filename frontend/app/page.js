@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import PostComposer from '../components/PostComposer';
 import PostCard from '../components/PostCard';
+import UserSuggestions from '../components/UserSuggestions';
 import {
   apiFetch,
   getCurrentUser,
@@ -86,6 +87,17 @@ export default function HomePage() {
             ))}
           </div>
         )}
+      </section>
+      <section>
+        <h1 className="page-title">Home Feed</h1>
+
+        <PostComposer onCreated={handleCreated} />
+
+        <UserSuggestions />
+
+        {error && <p className="error">{error}</p>}
+
+        ...
       </section>
     </div>
   );
