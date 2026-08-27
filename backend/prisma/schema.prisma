@@ -25,6 +25,9 @@ model User {
 
   following Follow[] @relation("Following")
   followers Follow[] @relation("Followers")
+
+  sentRequests     FriendRequest[] @relation("SentRequests")
+  receivedRequests FriendRequest[] @relation("ReceivedRequests")
 }
 
 model Post {
@@ -106,4 +109,30 @@ enum ReactionType {
   WOW
   SAD
   ANGRY
+}
+
+enum FriendRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model FriendRequest {
+  id String @id @default(uuid())
+
+  senderId String
+  receiverId String
+
+  status String @default("PENDING")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sender User @relation("SentRequests", fields: [senderId], references: [id], onDelete: Cascade)
+
+  receiver User @relation("ReceivedRequests", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
 }
