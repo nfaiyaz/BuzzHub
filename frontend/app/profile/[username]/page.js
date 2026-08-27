@@ -107,19 +107,35 @@ export default function ProfilePage() {
         </p>
 
         <div className="stats-row">
-          <span>
-            <strong>{profile._count.posts}</strong> posts
-          </span>
+          <Link
+            href={`/profile/${profile.username}/posts`}
+            className="profile-stat"
+          >
+            <strong>
+              {profile._count.posts}
+            </strong>
+            <span>posts</span>
+          </Link>
 
-          <span>
-            <strong>{profile._count.followers}</strong>{' '}
-            followers
-          </span>
+          <Link
+            href={`/profile/${profile.username}/followers`}
+            className="profile-stat"
+          >
+            <strong>
+              {profile._count.followers}
+            </strong>
+            <span>followers</span>
+          </Link>
 
-          <span>
-            <strong>{profile._count.following}</strong>{' '}
-            following
-          </span>
+          <Link
+            href={`/profile/${profile.username}/following`}
+            className="profile-stat"
+          >
+            <strong>
+              {profile._count.following}
+            </strong>
+            <span>following</span>
+          </Link>
         </div>
 
         {!profile.isMe && (

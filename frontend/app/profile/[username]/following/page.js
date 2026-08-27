@@ -1,0 +1,91 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
+
+import { apiFetch } from '../../../../lib/api';
+
+export default function FollowingPage() {
+  const { username } = useParams();
+
+  const [users, setUsers] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!username) {
+      return;
+    }
+
+    async function loadFollowing() {
+      try {
+        setError('');
+
+        const data = await apiFetch(
+          `/users/${username}/following`
+        );
+
+        setUsers(data);
+      } catch (err) {
+        setError(err.message);
+      }
+    }
+
+    loadFollowing();
+  }, [username]);
+
+  if (error) {
+    return (
+      <div className="container">
+        <p className="error">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container profile-list-page">
+      <div className="card">
+        <Link
+          href={`/profile/${username}`}
+          className="secondary-button inline-button"
+        >
+          Back to profile
+        </Link>
+
+        <h1>
+          @{username} is following
+        </h1>
+      </div>
+
+      <div className="user-list">
+        {users.map(user => (
+          <Link
+            key={user.id}
+            href={`/profile/${user.username}`}
+            className="card user-list-item"
+          >
+            <div className="avatar-small">
+              {user.name
+                .slice(0, 1)
+                .toUpperCase()}
+            </div>
+
+            <div>
+              <strong>{user.name}</strong>
+
+              <div className="muted">
+                @{user.username}
+              </div>
+            </div>
+          </Link>
+        ))}
+
+        {users.length === 0 && (
+          <div className="card">
+            Not following anyone yet.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

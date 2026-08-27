@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
+import Link from 'next/link';
 
 export default function CommentList({ postId }) {
   const [comments, setComments] = useState([]);
@@ -70,9 +71,14 @@ export default function CommentList({ postId }) {
                 className="comment"
                 key={comment.id}
               >
-                <strong>
-                  @{comment.author.username}
-                </strong>
+                <Link
+                  href={`/profile/${comment.author.username}`}
+                  className="comment-author"
+                >
+                    <strong>
+                      @{comment.author.username}
+                    </strong>
+                </Link>
 
                 <span>{comment.content}</span>
               </div>
