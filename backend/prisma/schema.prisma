@@ -22,6 +22,7 @@ model User {
   comments  Comment[]
   likes     Like[]
   reactions Reaction[]
+  commentReactions CommentReaction[]
 
   following Follow[] @relation("Following")
   followers Follow[] @relation("Followers")
@@ -55,12 +56,19 @@ model Comment {
 
   postId   String
   authorId String
+  parentId String?
 
   post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
   author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  reactions CommentReaction[]
+
   @@index([postId])
   @@index([authorId])
+  @@index([parentId])
 }
 
 model Like {
@@ -135,4 +143,18 @@ model FriendRequest {
   @@unique([senderId, receiverId])
   @@index([receiverId])
   @@index([senderId])
+}
+
+model CommentReaction {
+  userId    String
+  commentId String
+  emoji     String
+
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment Comment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId])
+  @@index([commentId])
 }
