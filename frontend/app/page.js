@@ -41,20 +41,20 @@ export default function HomePage() {
   }, [router]);
 
   function handleCreated(post) {
-    setPosts(current => [post, ...current]);
+    setPosts((current) => [post, ...current]);
   }
 
   function handleUpdated(updatedPost) {
-    setPosts(current =>
-      current.map(p =>
+    setPosts((current) =>
+      current.map((p) =>
         p.id === updatedPost.id ? updatedPost : p
       )
     );
   }
 
   function handleDeleted(postId) {
-    setPosts(current =>
-      current.filter(p => p.id !== postId)
+    setPosts((current) =>
+      current.filter((p) => p.id !== postId)
     );
   }
 
@@ -77,7 +77,7 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="post-list">
-            {posts.map(post => (
+            {posts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
@@ -88,17 +88,10 @@ export default function HomePage() {
           </div>
         )}
       </section>
-      <section>
-        <h1 className="page-title">Home Feed</h1>
 
-        <PostComposer onCreated={handleCreated} />
-
+      <aside>
         <UserSuggestions />
-
-        {error && <p className="error">{error}</p>}
-
-        ...
-      </section>
+      </aside>
     </div>
   );
 }

@@ -4,7 +4,7 @@ const prisma = require('./prisma');
 const requestRoutes = require('./routes/request.routes');
 const PORT = Number(process.env.PORT || 5000);
 
-app.use('/api/users', requestRoutes);
+app.use('/api/requests', requestRoutes);
 
 async function start() {
 try {

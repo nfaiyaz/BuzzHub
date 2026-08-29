@@ -1,32 +1,49 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
-
+import { useEffect, useState } from 'react';
 import { apiFetch } from '../lib/api';
 
 export default function UserSuggestions() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processing, setProcessing] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadSuggestions() {
       try {
         const data = await apiFetch('/users/suggestions');
 
-        setUsers(data);
+        if (!cancelled) {
+          setUsers(data);
+        }
       } catch (err) {
-        setError(err.message);
+        if (!cancelled) {
+          setError(err.message);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     loadSuggestions();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleFollow(username) {
+    if (processing) return;
+
+    setProcessing(username);
+    setError('');
+
     try {
       await apiFetch(`/users/${username}/follow`, {
         method: 'POST',
@@ -36,86 +53,100 @@ export default function UserSuggestions() {
         current.filter((user) => user.username !== username)
       );
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
+    } finally {
+      setProcessing(null);
     }
   }
 
   async function handleRequest(username) {
+    if (processing) return;
+
+    setProcessing(username);
+    setError('');
+
     try {
-      const result = await apiFetch(
-        `/users/${username}/request`,
-        {
-          method: 'POST',
-        }
-      );
+      const data = await apiFetch(`/requests/${username}/request`, {
+        method: 'POST',
+      });
 
       setUsers((current) =>
         current.map((user) =>
           user.username === username
             ? {
                 ...user,
-                requestStatus: result.status,
+                requestStatus: data.status,
+                requestId: data.requestId || null,
               }
             : user
         )
       );
     } catch (err) {
-      alert(err.message);
+      setError(err.message);
+    } finally {
+      setProcessing(null);
     }
   }
 
   if (loading) {
     return (
       <div className="card">
-        Loading suggestions...
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="card">
-        <p className="error">{error}</p>
+        <h2>Suggested People</h2>
+        <p className="muted">Loading suggestions...</p>
       </div>
     );
   }
 
   if (users.length === 0) {
-    return null;
+    return (
+      <div className="card">
+        <h2>Suggested People</h2>
+        <p className="muted">
+          No new people to suggest right now.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="card suggestions-card">
-      <h2>People you may know</h2>
+    <div className="card">
+      <h2>Suggested People</h2>
+
+      {error && <p className="error">{error}</p>}
 
       <div className="suggestions-list">
         {users.map((user) => (
-          <div
-            className="suggestion-item"
-            key={user.id}
-          >
-            <div className="suggestion-info">
-              <Link
-                href={`/profile/${user.username}`}
-              >
-                <strong>{user.name}</strong>
-              </Link>
-
-              <div className="muted">
-                @{user.username}
+          <div className="suggestion-item" key={user.id}>
+            <div className="suggestion-user">
+              <div className="avatar">
+                {user.name.slice(0, 1).toUpperCase()}
               </div>
 
-              {user.bio && (
-                <p>{user.bio}</p>
-              )}
+              <div>
+                <Link
+                  href={`/profile/${user.username}`}
+                  className="author-name"
+                >
+                  {user.name}
+                </Link>
+
+                <div className="muted">
+                  @{user.username}
+                </div>
+
+                {user.bio && (
+                  <p className="suggestion-bio">
+                    {user.bio}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div className="suggestion-actions">
               <button
                 className="secondary-button"
-                onClick={() =>
-                  handleFollow(user.username)
-                }
+                disabled={processing === user.username}
+                onClick={() => handleFollow(user.username)}
               >
                 Follow
               </button>
@@ -130,11 +161,12 @@ export default function UserSuggestions() {
               ) : (
                 <button
                   className="primary-button"
-                  onClick={() =>
-                    handleRequest(user.username)
-                  }
+                  disabled={processing === user.username}
+                  onClick={() => handleRequest(user.username)}
                 >
-                  Add Request
+                  {processing === user.username
+                    ? 'Sending...'
+                    : 'Add Request'}
                 </button>
               )}
             </div>

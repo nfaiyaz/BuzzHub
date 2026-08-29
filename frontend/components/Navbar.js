@@ -44,6 +44,10 @@ export default function Navbar() {
                 Profile
               </Link>
 
+              <Link href="/requests">
+                Requests
+              </Link>
+
               <button
                 className="link-button"
                 onClick={handleLogout}

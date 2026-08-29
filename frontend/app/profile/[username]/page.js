@@ -57,6 +57,25 @@ export default function ProfilePage() {
     }
   }
 
+  async function sendRequest() {
+  try {
+    const data = await apiFetch(
+      `/requests/${username}/request`,
+      {
+        method: 'POST',
+      }
+    );
+
+    setProfile((current) => ({
+      ...current,
+      requestStatus: data.status,
+      requestId: data.requestId || null,
+    }));
+  } catch (err) {
+    setError(err.message);
+  }
+}
+
   function handleUpdated(updated) {
     setPosts(current =>
       current.map(p =>
@@ -136,16 +155,44 @@ export default function ProfilePage() {
             </strong>
             <span>following</span>
           </Link>
+
+          <Link
+            href={`/profile/${profile.username}/friends`}
+            className="profile-stat"
+          >
+            <strong>
+              {profile.friendCount}
+            </strong>
+            <span>friends</span>
+          </Link>
         </div>
 
         {!profile.isMe && (
-          <button
-            className="primary-button"
-            onClick={toggleFollow}
-          >
-            {profile.isFollowing ? 'Unfollow' : 'Follow'}
-          </button>
-        )}
+  <div className="profile-actions">
+    <button
+      className="primary-button"
+      onClick={toggleFollow}
+    >
+      {profile.isFollowing ? 'Unfollow' : 'Follow'}
+    </button>
+
+    {profile.requestStatus === 'PENDING' ? (
+      <button
+        className="secondary-button"
+        disabled
+      >
+        Request Pending
+      </button>
+    ) : (
+      <button
+        className="secondary-button"
+        onClick={sendRequest}
+      >
+        Add Request
+      </button>
+    )}
+  </div>
+)}
 
         {profile.isMe && (
           <Link

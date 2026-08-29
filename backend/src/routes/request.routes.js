@@ -109,7 +109,7 @@ router.post('/:username/request', requireAuth, async (req, res) => {
 
 
 // Get received requests
-router.get('/requests/received', requireAuth, async (req, res) => {
+router.get('/received', requireAuth, async (req, res) => {
   try {
     const requests = await prisma.friendRequest.findMany({
       where: {
@@ -143,7 +143,7 @@ router.get('/requests/received', requireAuth, async (req, res) => {
 
 
 // Get sent requests
-router.get('/requests/sent', requireAuth, async (req, res) => {
+router.get('/sent', requireAuth, async (req, res) => {
   try {
     const requests = await prisma.friendRequest.findMany({
       where: {
@@ -177,7 +177,7 @@ router.get('/requests/sent', requireAuth, async (req, res) => {
 
 
 // Accept request
-router.post('/requests/:id/accept', requireAuth, async (req, res) => {
+router.post('/:id/accept', requireAuth, async (req, res) => {
   try {
     const request = await prisma.friendRequest.findUnique({
       where: {
@@ -227,7 +227,7 @@ router.post('/requests/:id/accept', requireAuth, async (req, res) => {
 
 
 // Reject request
-router.post('/requests/:id/reject', requireAuth, async (req, res) => {
+router.post('/:id/reject', requireAuth, async (req, res) => {
   try {
     const request = await prisma.friendRequest.findUnique({
       where: {
@@ -271,6 +271,74 @@ router.post('/requests/:id/reject', requireAuth, async (req, res) => {
 
     res.status(500).json({
       message: 'Could not reject friend request.',
+    });
+  }
+});
+
+// Get friends
+router.get('/:username/friends', requireAuth, async (req, res) => {
+  try {
+    const username = req.params.username.toLowerCase();
+
+    const target = await prisma.user.findUnique({
+      where: {
+        username,
+      },
+    });
+
+    if (!target) {
+      return res.status(404).json({
+        message: 'User not found.',
+      });
+    }
+
+    const sentRequests = await prisma.friendRequest.findMany({
+      where: {
+        senderId: target.id,
+        status: 'ACCEPTED',
+      },
+      include: {
+        receiver: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
+      },
+    });
+
+    const receivedRequests = await prisma.friendRequest.findMany({
+      where: {
+        receiverId: target.id,
+        status: 'ACCEPTED',
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarUrl: true,
+            bio: true,
+          },
+        },
+      },
+    });
+
+    const friends = [
+      ...sentRequests.map((request) => request.receiver),
+      ...receivedRequests.map((request) => request.sender),
+    ];
+
+    res.json(friends);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: 'Could not load friends.',
     });
   }
 });

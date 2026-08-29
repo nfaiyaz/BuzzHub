@@ -43,9 +43,28 @@ router.get('/:username', requireAuth, async (req, res) => {
       },
     });
 
+    const request = await prisma.friendRequest.findFirst({
+      where: {
+        OR: [
+          {
+            senderId: req.userId,
+            receiverId: user.id,
+          },
+          {
+            senderId: user.id,
+            receiverId: req.userId,
+          },
+        ],
+        status: 'PENDING',
+      },
+    });
+
     return res.json({
       ...user,
       isFollowing: Boolean(follow),
+      requestStatus: request ? 'PENDING' : null,
+      requestId: request?.id || null,
+      requestSenderId: request?.senderId || null,
       isMe: req.userId === user.id,
     });
   } catch (error) {
